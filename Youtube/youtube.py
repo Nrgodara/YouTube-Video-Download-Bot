@@ -21,7 +21,7 @@ async def process_youtube_link(client, message):
         return
     youtube_link = message.text
     try:
-        downloading_msg = await message.reply_text("Downloading video...")
+        downloading_msg = await message.reply_sticker("CAACAgUAAxkBAAIc8WZcSfIo-OOX3IT3eJ0h85aAyYnmAAKgDQACuMSRV7BENGrfZuYqNAQ")
 
         ydl_opts = {
             'outtmpl': 'downloaded_video_%(id)s.%(ext)s',
@@ -41,7 +41,7 @@ async def process_youtube_link(client, message):
 
             if title:
                 ydl.download([youtube_link])
-                uploading_msg = await message.reply_text("Uploading video...")
+                uploading_msg = message.reply_sticker("CAACAgUAAxkBAAIc62ZcR1mU5VRDVMUWh3iJuRcU3P0mAAKiAAPIlGQU_BpvPMzvnqw0BA")
                 video_filename = f"downloaded_video_{info_dict['id']}.mp4"
                 sent_message = await client.send_video(message.chat.id, video=open(video_filename, 'rb'), caption=title)
 
@@ -49,7 +49,7 @@ async def process_youtube_link(client, message):
                 await downloading_msg.delete()
                 await uploading_msg.delete()
 
-                await message.reply_text("\n\nOWNER : @LISA_FAN_LK 💕\n\nSUCCESSFULLY UPLOADED!")
+                await message.reply_text("\n\𝐎𝐰𝐧𝐞𝐫 : [𝑴𝑨𝑯𝑰®❤️‍🔥](https://t.me/+055Dfay4AsNjYWE1)\n\𝐒𝐮𝐜𝐜𝐞𝐬𝐬𝐟𝐮𝐥𝐥𝐲 𝐃𝐨𝐰𝐧𝐥𝐨𝐚𝐝𝐞𝐝!")
             else:
                 logging.error("No video streams found.")
                 await message.reply_text("Error: No downloadable video found.")
