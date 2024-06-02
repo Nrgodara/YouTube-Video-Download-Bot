@@ -56,7 +56,7 @@ async def process_youtube_link(client, message):
                 await downloading_msg.delete()
                 await uploading_msg.delete()
 
-                await message.reply_text("\n\𝐎𝐰𝐧𝐞𝐫 : [𝑴𝑨𝑯𝑰®❤️‍🔥](https://t.me/+055Dfay4AsNjYWE1)\n\𝐒𝐮𝐜𝐜𝐞𝐬𝐬𝐟𝐮𝐥𝐥𝐲 𝐃𝐨𝐰𝐧𝐥𝐨𝐚𝐝𝐞𝐝!")
+                #await message.reply_text("\n\𝐎𝐰𝐧𝐞𝐫 : [𝑴𝑨𝑯𝑰®❤️‍🔥](https://t.me/+055Dfay4AsNjYWE1)\n\𝐒𝐮𝐜𝐜𝐞𝐬𝐬𝐟𝐮𝐥𝐥𝐲 𝐃𝐨𝐰𝐧𝐥𝐨𝐚𝐝𝐞𝐝!")
             else:
                 logging.error("No video streams found.")
                 await message.reply_text("Error: No downloadable video found.")
