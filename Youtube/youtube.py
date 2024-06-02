@@ -21,7 +21,7 @@ async def process_youtube_link(client, message):
 
     youtube_link = message.text
     try:
-        downloading_msg = await message.reply_text("🔎")
+        downloading_msg = await message.reply_sticker("CAACAgUAAxkBAAIc8WZcSfIo-OOX3IT3eJ0h85aAyYnmAAKgDQACuMSRV7BENGrfZuYqNAQ")
 
         ydl_opts = {
             'outtmpl': 'downloaded_video_%(id)s.%(ext)s',
@@ -55,7 +55,7 @@ async def process_youtube_link(client, message):
                         filesize_mb = fmt.get('filesize') / (1024 * 1024) if fmt.get('filesize') else None
                         if height != 'Unknown' and filesize_mb:
                             button_text = f"{height}p - {filesize_mb:.2f} MB"
-                            callback_data = f"{info_dict['id']}|{fmt['format_id']}"
+                            callback_data = f"{info_dict['id']}|{fmt['format_id']}|video"
                             buttons.append([InlineKeyboardButton(button_text, callback_data=callback_data)])
 
                     if (
@@ -72,7 +72,7 @@ async def process_youtube_link(client, message):
                             filesize_mb = audio_fmt.get('filesize') / (1024 * 1024) if audio_fmt.get('filesize') else None
                             if abr != 'Unknown' and filesize_mb:
                                 button_text = f"{abr} kbps - {filesize_mb:.2f} MB"
-                                callback_data = f"{info_dict['id']}|{audio_fmt['format_id']}"
+                                callback_data = f"{info_dict['id']}|{audio_fmt['format_id']}|audio"
                                 audio_buttons.append([InlineKeyboardButton(button_text, callback_data=callback_data)])
 
                         buttons.extend(audio_buttons)
@@ -81,7 +81,8 @@ async def process_youtube_link(client, message):
                     formats_dict[info_dict['id']] = {
                         'youtube_link': youtube_link,
                         'thumbnail_url': thumbnail_url,
-                        'title': title
+                        'title': title,
+                        'media_type': 'video'
                     }
 
                     await message.reply_text(
@@ -107,6 +108,7 @@ async def callback_query_handler(client, callback_query: CallbackQuery):
         data = callback_query.data.split('|')
         video_id = data[0]
         format_id = data[1]
+        media_type = data[2]
         video_info = formats_dict.get(video_id)
 
         if not video_info:
@@ -158,8 +160,10 @@ async def callback_query_handler(client, callback_query: CallbackQuery):
 
         await downloading_msg.delete()
         await callback_query.message.delete()
-        
+        await callback_query.message.reply_text(
+            "Successfully Downloaded!\n\nOwner: [MAHI®❤️‍🔥](https://t.me/+055Dfay4AsNjYWE1)"
+        )
     except Exception as e:
         logging.exception("Error processing callback query: %s", e)
-        await callback_query.message.reply_text("Failed to process the request. Please try again later.")
+        await callback_query.message.edit_text("Error: Failed to process the request.")
         await downloading_msg.delete()
