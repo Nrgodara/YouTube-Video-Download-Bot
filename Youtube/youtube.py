@@ -43,7 +43,7 @@ async def process_youtube_link(client, message):
                 ydl.download([youtube_link])
                 uploading_msg = await message.reply_sticker("CAACAgUAAxkBAAIc62ZcR1mU5VRDVMUWh3iJuRcU3P0mAAKiAAPIlGQU_BpvPMzvnqw0BA")
                 video_filename = f"downloaded_video_{info_dict['id']}.mp4"
-                sent_message = await client.send_video(message.chat.id, video=open(video_filename, 'rb'), caption=title)
+                sent_message = await client.send_video(message.chat.id, video=open(video_filename, 'rb'), caption=title\n\nDownloaded by : [YouTube Video Downloader Bot](https://t.me/ytdl_mbot))
 
                 await asyncio.sleep(2)
                 await downloading_msg.delete()
