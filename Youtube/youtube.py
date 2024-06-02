@@ -21,7 +21,7 @@ async def process_youtube_link(client, message):
 
     youtube_link = message.text
     try:
-        downloading_msg = await message.reply_sticker("CAACAgUAAxkBAAIc8WZcSfIo-OOX3IT3eJ0h85aAyYnmAAKgDQACuMSRV7BENGrfZuYqNAQ")
+        downloading_msg = await message.reply_text("🔎")
 
         ydl_opts = {
             'outtmpl': 'downloaded_video_%(id)s.%(ext)s',
@@ -42,13 +42,11 @@ async def process_youtube_link(client, message):
             formats = info_dict.get('formats', [])
 
             if title:
-                video_buttons = []
-                audio_formats = []
+                buttons = []
 
                 for fmt in formats:
                     if (
                         'height' in fmt and 
-                        fmt.get('acodec') != 'none' and 
                         fmt.get('vcodec') != 'none' and 
                         fmt.get('ext') in ['mp4', 'mkv'] and 
                         fmt.get('filesize')
@@ -57,8 +55,8 @@ async def process_youtube_link(client, message):
                         filesize_mb = fmt.get('filesize') / (1024 * 1024) if fmt.get('filesize') else None
                         if height != 'Unknown' and filesize_mb:
                             button_text = f"{height}p - {filesize_mb:.2f} MB"
-                            callback_data = f"{info_dict['id']}|{fmt['format_id']}|video"
-                            video_buttons.append([InlineKeyboardButton(button_text, callback_data=callback_data)])
+                            callback_data = f"{info_dict['id']}|{fmt['format_id']}"
+                            buttons.append([InlineKeyboardButton(button_text, callback_data=callback_data)])
 
                     if (
                         fmt.get('acodec') != 'none' and 
@@ -66,20 +64,18 @@ async def process_youtube_link(client, message):
                         fmt.get('ext') in ['m4a', 'mp3'] and 
                         fmt.get('filesize')
                     ):
-                        audio_formats.append(fmt)
+                        audio_formats = [f for f in formats if f.get('ext') in ['m4a', 'mp3'] and f.get('filesize')]
+                        audio_formats.sort(key=lambda x: x.get('abr', 0), reverse=True)
+                        audio_buttons = []
+                        for audio_fmt in audio_formats[:2]:
+                            abr = audio_fmt.get('abr', 'Unknown')
+                            filesize_mb = audio_fmt.get('filesize') / (1024 * 1024) if audio_fmt.get('filesize') else None
+                            if abr != 'Unknown' and filesize_mb:
+                                button_text = f"{abr} kbps - {filesize_mb:.2f} MB"
+                                callback_data = f"{info_dict['id']}|{audio_fmt['format_id']}"
+                                audio_buttons.append([InlineKeyboardButton(button_text, callback_data=callback_data)])
 
-                # Sort audio formats by bitrate and select the best two
-                audio_formats.sort(key=lambda x: x.get('abr', 0), reverse=True)
-                audio_buttons = []
-                for fmt in audio_formats[:2]:
-                    abr = fmt.get('abr', 'Unknown')
-                    filesize_mb = fmt.get('filesize') / (1024 * 1024) if fmt.get('filesize') else None
-                    if abr != 'Unknown' and filesize_mb:
-                        button_text = f"{abr} kbps - {filesize_mb:.2f} MB"
-                        callback_data = f"{info_dict['id']}|{fmt['format_id']}|audio"
-                        audio_buttons.append([InlineKeyboardButton(button_text, callback_data=callback_data)])
-
-                buttons = video_buttons + audio_buttons
+                        buttons.extend(audio_buttons)
 
                 if buttons:
                     formats_dict[info_dict['id']] = {
@@ -111,7 +107,6 @@ async def callback_query_handler(client, callback_query: CallbackQuery):
         data = callback_query.data.split('|')
         video_id = data[0]
         format_id = data[1]
-        media_type = data[2]
         video_info = formats_dict.get(video_id)
 
         if not video_info:
@@ -141,21 +136,20 @@ async def callback_query_handler(client, callback_query: CallbackQuery):
             info_dict = ydl.extract_info(youtube_link, download=True)
             media_filename = ydl.prepare_filename(info_dict)
 
-        if media_type == "video":
-            thumbnail_filename = "thumbnail.jpg"
-            response = requests.get(thumbnail_url)
-            with open(thumbnail_filename, 'wb') as f:
-                f.write(response.content)
+        with open(media_filename, 'rb') as media_file:
+            if media_type == "video":
+                thumbnail_filename = "thumbnail.jpg"
+                response = requests.get(thumbnail_url)
+                with open(thumbnail_filename, 'wb') as f:
+                    f.write(response.content)
 
-            with open(media_filename, 'rb') as media_file:
                 await client.send_video(
                     callback_query.message.chat.id,
                     video=media_file,
                     caption=f"{title}\n\nDownloaded by: [YouTube Video Downloader Bot](https://t.me/ytdl_mbot)",
                     thumb=thumbnail_filename
                 )
-        elif media_type == "audio":
-            with open(media_filename, 'rb') as media_file:
+            elif media_type == "audio":
                 await client.send_audio(
                     callback_query.message.chat.id,
                     audio=media_file,
@@ -164,14 +158,8 @@ async def callback_query_handler(client, callback_query: CallbackQuery):
 
         await downloading_msg.delete()
         await callback_query.message.delete()
-        await callback_query.message.reply_text(
-            "Successfully Downloaded!\n\nOwner: [MAHI®❤️‍🔥](https://t.me/+055Dfay4AsNjYWE1)",
-            disable_web_page_preview=True
-        )
+        
     except Exception as e:
-        logging.exception("Error downloading YouTube media: %s", e)
-        await callback_query.message.reply_text(f"Failed to download the media. Please try again later.\n\nError: {e}")
-
-if __name__ == "__main__":
-    app = Client("youtube_downloader", config=Config)
-    app.run()
+        logging.exception("Error processing callback query: %s", e)
+        await callback_query.message.reply_text("Failed to process the request. Please try again later.")
+        await downloading_msg.delete()
