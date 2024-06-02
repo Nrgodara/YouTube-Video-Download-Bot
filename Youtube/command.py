@@ -55,7 +55,7 @@ async def start(client, message):
         return
     #user = message.from_user
     await message.reply_photo(
-        photo = "https://graph.org/file/7af9a8ab33a563cc7e6d4.jpg"
+        photo="https://graph.org/file/7af9a8ab33a563cc7e6d4.jpg",
         caption=Translation.START_TEXT.format(message.from_user.first_name, wish),
         reply_markup=InlineKeyboardMarkup(
         [
@@ -84,7 +84,7 @@ Enjoy using the bot!
 
     """
     message.reply_video(
-        video="https://graph.org/file/b6841327d49e1699ff2ad.mp4"
+        video="https://graph.org/file/b6841327d49e1699ff2ad.mp4",
         caption=help_text
     )
 
