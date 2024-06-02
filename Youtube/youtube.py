@@ -21,7 +21,7 @@ async def process_youtube_link(client, message):
 
     youtube_link = message.text
     try:
-        downloading_msg = await message.reply_sticker("CAACAgUAAxkBAAIc-mZcZQABT9OVFVCbGmKrBiHQBm0pBgACrwEAAkglCVeK2COVlaQ2mTQE")
+        downloading_msg = await message.reply_text("☄️")
 
         ydl_opts = {
             'outtmpl': 'downloaded_video_%(id)s.%(ext)s',
@@ -44,8 +44,10 @@ async def process_youtube_link(client, message):
             if title:
                 buttons = []
                 for fmt in formats:
-                    if 'height' in fmt and 'filesize' in fmt:
-                        button_text = f"{fmt['height']}p - {fmt['filesize'] / (1024 * 1024):.2f} MB"
+                    if 'height' in fmt:
+                        height = fmt.get('height', 'Unknown')
+                        filesize_mb = fmt.get('filesize', 0) / (1024 * 1024) if fmt.get('filesize') else 'Unknown'
+                        button_text = f"{height}p - {filesize_mb:.2f} MB" if filesize_mb != 'Unknown' else f"{height}p - Unknown size"
                         callback_data = f"{info_dict['id']}|{fmt['format_id']}"
                         buttons.append([InlineKeyboardButton(button_text, callback_data=callback_data)])
 
@@ -98,7 +100,7 @@ async def callback_query_handler(client, callback_query: CallbackQuery):
         if youtube_dl_password:
             ydl_opts['password'] = youtube_dl_password
 
-        uploading_msg = await callback_query.message.reply_sticker("CAACAgUAAxkBAAIc62ZcR1mU5VRDVMUWh3iJuRcU3P0mAAKiAAPIlGQU_BpvPMzvnqw0BA")
+        downloading_msg = await callback_query.message.reply_sticker("CAACAgUAAxkBAAIc62ZcR1mU5VRDVMUWh3iJuRcU3P0mAAKiAAPIlGQU_BpvPMzvnqw0BA")
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(youtube_link, download=True)
@@ -117,11 +119,9 @@ async def callback_query_handler(client, callback_query: CallbackQuery):
                 thumb=thumbnail_filename
             )
 
-        await uploading_msg.delete()
+        await downloading_msg.delete()
         await callback_query.message.delete()
-        #await callback_query.message.reply_text(
-            #"Successfully Downloaded!\n\nOwner: [MAHI®❤️‍🔥](https://t.me/+055Dfay4AsNjYWE1)"
-        #)
+        
     except Exception as e:
         logging.exception("Error downloading YouTube video: %s", e)
         await callback_query.message.reply_text(f"Failed to download the video. Please try again later.\n\nError: {e}")
