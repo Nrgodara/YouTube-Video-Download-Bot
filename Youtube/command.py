@@ -14,9 +14,9 @@ from Youtube.forcesub import handle_force_subscribe
 
 # Calculate current time greeting
 currentTime = datetime.datetime.now()
-if currentTime.hour < 12:
+if currentTime.hour < 07:
     wish = "Good morning 🌞"
-elif 12 <= currentTime.hour < 18:
+elif 12 <= currentTime.hour < 13:
     wish = "Good afternoon 🌤️"
 else:
     wish = "Good evening 🌝"
@@ -54,8 +54,9 @@ async def start(client, message):
       if fsub == 400:
         return
     #user = message.from_user
-    await message.reply_text(
-        text=Translation.START_TEXT.format(message.from_user.first_name, wish),
+    await message.reply_photo(
+        photo=https://graph.org/file/7af9a8ab33a563cc7e6d4.jpg
+        caption=Translation.START_TEXT.format(message.from_user.first_name, wish),
         reply_markup=InlineKeyboardMarkup(
         [
             [
@@ -82,6 +83,9 @@ To upload a YouTube video, simply send me the YouTube link.
 Enjoy using the bot!
 
     """
-    message.reply_text(help_text)
+    message.reply_video(
+        video=https://graph.org/file/b6841327d49e1699ff2ad.mp4
+        caption=help_text
+    )
 
 ########################🎊 Lisa | NT BOTS 🎊######################################################
