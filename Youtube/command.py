@@ -14,7 +14,7 @@ from Youtube.forcesub import handle_force_subscribe
 
 # Calculate current time greeting
 currentTime = datetime.datetime.now()
-if currentTime.hour < 07:
+if currentTime.hour < 7:
     wish = "Good morning 🌞"
 elif 12 <= currentTime.hour < 13:
     wish = "Good afternoon 🌤️"
