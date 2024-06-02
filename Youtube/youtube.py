@@ -1,66 +1,131 @@
-# ©️ LISA-KOREA | @LISA_FAN_LK | NT_BOT_CHANNEL | LISA-KOREA/YouTube-Video-Download-Bot
-
-# [⚠️ Do not change this repo link ⚠️] :- https://github.com/LISA-KOREA/YouTube-Video-Download-Bot
-
 import logging
 import asyncio
 import yt_dlp
+import requests
 from pyrogram import Client, filters
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from Youtube.config import Config
 from Youtube.forcesub import handle_force_subscribe
-
 
 youtube_dl_username = None  
 youtube_dl_password = None 
 
+formats_dict = {}
+
 @Client.on_message(filters.regex(r'^(http(s)?:\/\/)?((w){3}.)?youtu(be|.be)?(\.com)?\/.+'))
 async def process_youtube_link(client, message):
     if Config.CHANNEL:
-      fsub = await handle_force_subscribe(client, message)
-      if fsub == 400:
-        return
+        fsub = await handle_force_subscribe(client, message)
+        if fsub == 400:
+            return
+
     youtube_link = message.text
     try:
-        downloading_msg = await message.reply_sticker("CAACAgUAAxkBAAIc8WZcSfIo-OOX3IT3eJ0h85aAyYnmAAKgDQACuMSRV7BENGrfZuYqNAQ")
+        downloading_msg = await message.reply_sticker("CAACAgUAAxkBAAIc-mZcZQABT9OVFVCbGmKrBiHQBm0pBgACrwEAAkglCVeK2COVlaQ2mTQE")
 
         ydl_opts = {
             'outtmpl': 'downloaded_video_%(id)s.%(ext)s',
             'progress_hooks': [lambda d: print(d['status'])]
         }
 
-        if Config.HTTP_PROXY != "":
+        if Config.HTTP_PROXY:
             ydl_opts['proxy'] = Config.HTTP_PROXY
-        if youtube_dl_username is not None:
+        if youtube_dl_username:
             ydl_opts['username'] = youtube_dl_username
-        if youtube_dl_password is not None:
+        if youtube_dl_password:
             ydl_opts['password'] = youtube_dl_password
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(youtube_link, download=False)
-            title = info_dict.get('title', None)
+            title = info_dict.get('title')
+            thumbnail_url = info_dict.get('thumbnail')
+            formats = info_dict.get('formats', [])
 
             if title:
-                ydl.download([youtube_link])
-                uploading_msg = await message.reply_sticker("CAACAgUAAxkBAAIc62ZcR1mU5VRDVMUWh3iJuRcU3P0mAAKiAAPIlGQU_BpvPMzvnqw0BA")
-                video_filename = f"downloaded_video_{info_dict['id']}.mp4"
-                sent_message = await client.send_video(
-                    message.chat.id,
-                    video=open(video_filename, 'rb'),
-                    caption=f"{title}\n\nDownloaded by: [YouTube Video Downloader Bot](https://t.me/ytdl_mbot)"
+                buttons = []
+                for fmt in formats:
+                    if 'height' in fmt and 'filesize' in fmt:
+                        button_text = f"{fmt['height']}p - {fmt['filesize'] / (1024 * 1024):.2f} MB"
+                        callback_data = f"{info_dict['id']}|{fmt['format_id']}"
+                        buttons.append([InlineKeyboardButton(button_text, callback_data=callback_data)])
+
+                formats_dict[info_dict['id']] = {
+                    'youtube_link': youtube_link,
+                    'thumbnail_url': thumbnail_url,
+                    'title': title
+                }
+
+                await message.reply_text(
+                    "Choose the quality to download:",
+                    reply_markup=InlineKeyboardMarkup(buttons)
                 )
-    
-    
-    
-
-                await asyncio.sleep(2)
                 await downloading_msg.delete()
-                await uploading_msg.delete()
-
-                #await message.reply_text("\n\𝐎𝐰𝐧𝐞𝐫 : [𝑴𝑨𝑯𝑰®❤️‍🔥](https://t.me/+055Dfay4AsNjYWE1)\n\𝐒𝐮𝐜𝐜𝐞𝐬𝐬𝐟𝐮𝐥𝐥𝐲 𝐃𝐨𝐰𝐧𝐥𝐨𝐚𝐝𝐞𝐝!")
             else:
                 logging.error("No video streams found.")
                 await message.reply_text("Error: No downloadable video found.")
+                await downloading_msg.delete()
     except Exception as e:
         logging.exception("Error processing YouTube link: %s", e)
-        await message.reply_text("Failed to process the YouTube link. Please try again later.\n\nError : e")
-      
+        await message.reply_text(f"Failed to process the YouTube link. Please try again later.\n\nError: {e}")
+        await downloading_msg.delete()
+
+@Client.on_callback_query()
+async def callback_query_handler(client, callback_query: CallbackQuery):
+    try:
+        data = callback_query.data.split('|')
+        video_id = data[0]
+        format_id = data[1]
+        video_info = formats_dict.get(video_id)
+
+        if not video_info:
+            await callback_query.message.edit_text("Error: Invalid video ID.")
+            return
+
+        youtube_link = video_info['youtube_link']
+        thumbnail_url = video_info['thumbnail_url']
+        title = video_info['title']
+
+        ydl_opts = {
+            'format': format_id,
+            'outtmpl': 'downloaded_video_%(id)s.%(ext)s',
+            'progress_hooks': [lambda d: print(d['status'])]
+        }
+
+        if Config.HTTP_PROXY:
+            ydl_opts['proxy'] = Config.HTTP_PROXY
+        if youtube_dl_username:
+            ydl_opts['username'] = youtube_dl_username
+        if youtube_dl_password:
+            ydl_opts['password'] = youtube_dl_password
+
+        uploading_msg = await callback_query.message.reply_sticker("CAACAgUAAxkBAAIc62ZcR1mU5VRDVMUWh3iJuRcU3P0mAAKiAAPIlGQU_BpvPMzvnqw0BA")
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(youtube_link, download=True)
+            video_filename = ydl.prepare_filename(info_dict)
+
+        thumbnail_filename = "thumbnail.jpg"
+        response = requests.get(thumbnail_url)
+        with open(thumbnail_filename, 'wb') as f:
+            f.write(response.content)
+
+        with open(video_filename, 'rb') as video_file:
+            await client.send_video(
+                callback_query.message.chat.id,
+                video=video_file,
+                caption=f"{title}\n\nDownloaded by: [YouTube Video Downloader Bot](https://t.me/ytdl_mbot)",
+                thumb=thumbnail_filename
+            )
+
+        await uploading_msg.delete()
+        await callback_query.message.delete()
+        #await callback_query.message.reply_text(
+            #"Successfully Downloaded!\n\nOwner: [MAHI®❤️‍🔥](https://t.me/+055Dfay4AsNjYWE1)"
+        #)
+    except Exception as e:
+        logging.exception("Error downloading YouTube video: %s", e)
+        await callback_query.message.reply_text(f"Failed to download the video. Please try again later.\n\nError: {e}")
+
+if __name__ == "__main__":
+    app = Client("youtube_downloader", config=Config)
+    app.run()
