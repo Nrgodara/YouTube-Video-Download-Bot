@@ -4,3 +4,5 @@ yt_dlp
 flask
 pytz
 gunicorn==20.1.0
+pymongo
+dnspython
