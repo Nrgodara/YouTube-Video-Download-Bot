@@ -128,3 +128,12 @@ async def broadcast(client, message):
             print(f"Failed to send message to {user['user_id']}: {e}")
 
     await message.reply_text(f"Broadcast completed.\nTotal users: {total_users}\nSuccess: {success_count}\nFailed: {failed_count}\nBlocked the bot: {blocked_count}")
+
+@Client.on_message(filters.private & filters.command("stats"))
+async def all_users(client, message):
+    if message.from_user.id not in Config.ADMIN_IDS:
+        await message.reply_text("You are not authorized to use this command.")
+        return
+
+    total_users = users_collection.count_documents({})
+    await message.reply_text(f"<b>Total users of the bot:</b> <code>{total_users}</code>")
