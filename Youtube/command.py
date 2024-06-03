@@ -5,7 +5,7 @@ from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from Youtube.config import Config
 from Youtube.script import Translation
 from Youtube.forcesub import handle_force_subscribe
-from Youtube.db import add_user, get_all_users
+from Youtube.db import add_user, get_all_users, users_collection
 
 # Set timezone to IST
 ist = pytz.timezone('Asia/Kolkata')
@@ -88,7 +88,7 @@ async def broadcast(client, message):
 
     reply_message = message.reply_to_message
     users_cursor = get_all_users()
-    total_users = users_cursor.count_documents({})
+    total_users = users_collection.count_documents({})
     success_count = 0
     failed_count = 0
     blocked_count = 0
