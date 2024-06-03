@@ -87,12 +87,13 @@ async def broadcast(client, message):
         return
 
     reply_message = message.reply_to_message
-    total_users = get_all_users().count()
+    users_cursor = get_all_users()
+    total_users = users_cursor.count_documents({})
     success_count = 0
     failed_count = 0
     blocked_count = 0
 
-    for user in get_all_users():
+    for user in users_cursor:
         try:
             if reply_message.forward_from or reply_message.forward_from_chat:
                 await client.forward_messages(chat_id=user['user_id'], from_chat_id=reply_message.chat.id, message_ids=reply_message.message_id)
