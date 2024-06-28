@@ -135,8 +135,9 @@ async def apply_effect(client, callback_query: CallbackQuery):
     )
     
     # Optionally, send the remixed audio to the log channel
+    
     await client.send_audio(
-        chat_id=LOG_CHANNEL,
+        chat_id= "-1002078217156",
         audio=output_file,
         caption=f"Remixed audio with {effect.replace('_', ' ').capitalize()} effect by [{callback_query.from_user.first_name}](tg://user?id={user_id})",
         title="Remixed Audio"
