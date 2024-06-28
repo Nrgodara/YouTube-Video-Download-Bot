@@ -8,6 +8,8 @@ import yt_dlp
 from pyrogram import Client, filters
 from Youtube.config import Config
 from Youtube.forcesub import handle_force_subscribe
+from pyrogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
+import ffmpeg
 
 
 youtube_dl_username = None  
@@ -63,4 +65,84 @@ async def process_youtube_link(client, message):
     except Exception as e:
         logging.exception("Error processing YouTube link: %s", e)
         await message.reply_text("Failed to process the YouTube link. Please try again later.\n\nError : e")
+
+@Client.on_message(filters.command("remix") & filters.private)
+async def remix_command(client, message: Message):
+    await message.reply(
+        "Please send the audio file you want to remix.",
+        quote=True
+    )
+
+@Client.on_message(filters.audio & filters.private)
+async def handle_audio(client, message: Message):
+    # Save the audio file for processing
+    audio_file = await message.download()
+    
+    # Provide a menu for editing options
+    markup = InlineKeyboardMarkup([
+        [InlineKeyboardButton("3D Audio", callback_data="effect_3d")],
+        [InlineKeyboardButton("Bass Boost", callback_data="effect_bass_boost")],
+        [InlineKeyboardButton("Echo", callback_data="effect_echo")],
+        [InlineKeyboardButton("Tempo Change", callback_data="effect_tempo")],
+        [InlineKeyboardButton("Reset Effects", callback_data="effect_reset")]
+    ])
+    
+    await message.reply(
+        "Select the effect you want to apply to your audio:",
+        reply_markup=markup,
+        quote=True
+    )
+    
+    # Store the audio file path in user data (you can use a dictionary or a database)
+    client.user_data[message.from_user.id] = audio_file
+
+
+@Client.on_callback_query(filters.regex(r"^effect_"))
+async def apply_effect(client, callback_query: CallbackQuery):
+    user_id = callback_query.from_user.id
+    effect = callback_query.data.split("_")[1]
+    audio_file = client.user_data.get(user_id)
+    
+    if not audio_file:
+        await callback_query.message.edit_text("No audio file found. Please send an audio file first using /remix.")
+        return
+    
+    output_file = f"remixed_{os.path.basename(audio_file)}"
+    
+    # Apply the selected effect using FFmpeg
+    if effect == "3d":
+        ffmpeg_cmd = f"ffmpeg -i {audio_file} -filter_complex \"apulsator=hz=0.1\" {output_file}"
+    elif effect == "bass_boost":
+        ffmpeg_cmd = f"ffmpeg -i {audio_file} -af \"bass=g=20\" {output_file}"
+    elif effect == "echo":
+        ffmpeg_cmd = f"ffmpeg -i {audio_file} -af \"aecho=0.8:0.88:60:0.4\" {output_file}"
+    elif effect == "tempo":
+        ffmpeg_cmd = f"ffmpeg -i {audio_file} -filter:a \"atempo=1.25\" {output_file}"
+    elif effect == "reset":
+        # Reset to the original audio
+        output_file = audio_file
+        await callback_query.message.reply_audio(audio=audio_file, caption="Original audio restored.")
+        return
+    
+    # Execute the FFmpeg command
+    os.system(ffmpeg_cmd)
+    
+    # Send the remixed audio back to the user
+    await callback_query.message.reply_audio(
+        audio=output_file,
+        caption=f"Here is your audio with {effect.replace('_', ' ').capitalize()} effect.",
+        title="Remixed Audio"
+    )
+    
+    # Optionally, send the remixed audio to the log channel
+    await client.send_audio(
+        chat_id=LOG_CHANNEL,
+        audio=output_file,
+        caption=f"Remixed audio with {effect.replace('_', ' ').capitalize()} effect by [{callback_query.from_user.first_name}](tg://user?id={user_id})",
+        title="Remixed Audio"
+    )
+    
+    # Clean up
+    if os.path.exists(output_file) and output_file != audio_file:
+        os.remove(output_file)
       
