@@ -12,10 +12,11 @@ from Youtube.forcesub import handle_force_subscribe
 user_data = {}
 
 # Initialize the bot
-app = Client("youtube_video_download_bot")
-
+#app = Client("youtube_video_download_bot")
+youtube_dl_username = None  
+youtube_dl_password = None
 # Command to process YouTube link
-@app.on_message(filters.regex(r'^(http(s)?:\/\/)?((w){3}.)?youtu(be|.be)?(\.com)?\/.+'))
+@Client.on_message(filters.regex(r'^(http(s)?:\/\/)?((w){3}.)?youtu(be|.be)?(\.com)?\/.+'))
 async def process_youtube_link(client, message):
     if Config.CHANNEL:
         fsub = await handle_force_subscribe(client, message)
@@ -69,7 +70,7 @@ async def process_youtube_link(client, message):
         await message.reply_text(f"Failed to process the YouTube link. Please try again later.\n\nError: {e}")
 
 # Command to initiate remix
-@app.on_message(filters.command("remix") & filters.private)
+@Client.on_message(filters.command("remix") & filters.private)
 async def remix_command(client, message: Message):
     await message.reply(
         "Please send the audio file you want to remix.",
@@ -77,7 +78,7 @@ async def remix_command(client, message: Message):
     )
 
 # Handle received audio and provide remix options
-@app.on_message(filters.audio & filters.private)
+@Client.on_message(filters.audio & filters.private)
 async def handle_audio(client, message: Message):
     # Save the audio file for processing
     audio_file = await message.download()
@@ -101,7 +102,7 @@ async def handle_audio(client, message: Message):
     user_data[message.from_user.id] = audio_file
 
 # Apply the chosen effect to the audio
-@app.on_callback_query(filters.regex(r"^effect_"))
+@Client.on_callback_query(filters.regex(r"^effect_"))
 async def apply_effect(client, callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
     effect = callback_query.data.split("_")[1]
