@@ -5,6 +5,7 @@
 import logging
 import asyncio
 import yt_dlp
+import ffmpeg
 from pyrogram import Client, filters
 from Youtube.config import Config
 from Youtube.forcesub import handle_force_subscribe
